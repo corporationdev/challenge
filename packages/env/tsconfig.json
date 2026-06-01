@@ -1,0 +1,3 @@
+{
+  "extends": "@challenge/config/tsconfig.base.json"
+}
