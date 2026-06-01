@@ -72,6 +72,10 @@
     "packages/config": {
       "name": "@challenge/config",
       "version": "0.0.0",
+      "devDependencies": {
+        "@types/node": "^24.3.0",
+        "typescript": "catalog:",
+      },
     },
     "packages/env": {
       "name": "@challenge/env",
@@ -90,11 +94,11 @@
     "packages/infra": {
       "name": "@challenge/infra",
       "dependencies": {
+        "@challenge/config": "workspace:*",
         "dotenv": "catalog:",
         "zod": "catalog:",
       },
       "devDependencies": {
-        "@challenge/config": "workspace:*",
         "alchemy": "catalog:",
         "typescript": "catalog:",
       },

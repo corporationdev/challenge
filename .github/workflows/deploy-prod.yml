@@ -1,0 +1,51 @@
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+env:
+  STAGE: production
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy Production
+    runs-on: ubuntu-latest
+    environment: Production
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Inject secrets
+        uses: ./.github/actions/inject-secrets
+        with:
+          stage: ${{ env.STAGE }}
+          op-service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      - name: Deploy Convex production
+        run: |
+          bun x convex deploy \
+            --cmd 'echo "CONVEX_URL=$CONVEX_URL" >> "$GITHUB_ENV" && echo "CONVEX_SITE_URL=$(echo "$CONVEX_URL" | sed s/.cloud/.site/)" >> "$GITHUB_ENV"'
+        working-directory: packages/backend
+
+      - name: Write runtime environment
+        run: bun scripts/write-runtime-env.ts
+
+      - name: Sync Convex environment variables
+        run: bun x convex env set --prod --force --from-file .env
+        working-directory: packages/backend
+
+      - name: Deploy Alchemy
+        run: bun run deploy

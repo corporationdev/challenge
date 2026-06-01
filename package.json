@@ -23,6 +23,7 @@
   },
   "type": "module",
   "scripts": {
+    "setup": "bun scripts/setup.ts",
     "dev": "turbo dev",
     "build": "turbo build",
     "check-types": "turbo check-types",
@@ -30,7 +31,8 @@
     "dev:server": "turbo -F @challenge/backend dev",
     "dev:setup": "turbo -F @challenge/backend dev:setup",
     "deploy": "turbo -F @challenge/infra deploy",
-    "destroy": "turbo -F @challenge/infra destroy"
+    "destroy": "turbo -F @challenge/infra destroy",
+    "secrets:inject": "bun scripts/secrets-inject.ts"
   },
   "dependencies": {
     "@challenge/env": "workspace:*",

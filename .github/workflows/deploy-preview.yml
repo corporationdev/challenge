@@ -1,0 +1,145 @@
+name: Deploy Preview
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+concurrency:
+  group: preview-${{ github.event.pull_request.head.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.head.ref != 'main' && github.actor != 'dependabot[bot]' }}
+    environment: Preview
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Clean branch name
+        id: clean-branch-name
+        uses: ./.github/actions/clean-branch-name
+        with:
+          branch: ${{ github.event.pull_request.head.ref }}
+
+      - name: Set stage
+        run: echo "STAGE=preview-${{ steps.clean-branch-name.outputs.clean_branch_name }}" >> "$GITHUB_ENV"
+
+      - name: Inject secrets
+        uses: ./.github/actions/inject-secrets
+        with:
+          stage: preview-${{ steps.clean-branch-name.outputs.clean_branch_name }}
+          op-service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      - name: Deploy Convex preview
+        run: |
+          bun x convex deploy --preview-create "$STAGE" \
+            --cmd 'echo "CONVEX_URL=$CONVEX_URL" >> "$GITHUB_ENV" && echo "CONVEX_SITE_URL=$(echo "$CONVEX_URL" | sed s/.cloud/.site/)" >> "$GITHUB_ENV"'
+        working-directory: packages/backend
+
+      - name: Write runtime environment
+        run: bun scripts/write-runtime-env.ts
+
+      - name: Sync Convex environment variables
+        run: bun x convex env set --preview-name "$STAGE" --force --from-file .env
+        working-directory: packages/backend
+
+      - name: Deploy Alchemy
+        id: deploy
+        run: |
+          bun run deploy
+          web_url="$(bun -e 'const { getStageWebUrl } = await import("@challenge/config/runtime"); console.log(getStageWebUrl(process.env.STAGE));')"
+          echo "web_url=${web_url}" >> "$GITHUB_OUTPUT"
+
+      - name: Comment PR - Success
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const webUrl = '${{ steps.deploy.outputs.web_url }}';
+            const commentBody = [
+              '## Preview Deployment',
+              '',
+              `**Stage:** ${process.env.STAGE}`,
+              `**URL:** ${webUrl}`,
+              '',
+              `_Updated: ${new Date().toUTCString()}_`,
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find((comment) =>
+              comment.user.type === 'Bot' && comment.body.includes('Preview Deployment')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody,
+              });
+            }
+
+      - name: Comment PR - Failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commentBody = [
+              '## Preview Deployment Failed',
+              '',
+              `**Stage:** ${process.env.STAGE}`,
+              `[View logs](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`,
+              '',
+              `_Updated: ${new Date().toUTCString()}_`,
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find((comment) =>
+              comment.user.type === 'Bot' && comment.body.includes('Preview Deployment')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody,
+              });
+            }
