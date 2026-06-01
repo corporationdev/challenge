@@ -1,5 +1,19 @@
 {
   "name": "@challenge/config",
   "version": "0.0.0",
-  "private": true
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "exports": {
+    "./runtime": "./src/runtime.ts",
+    "./stage": "./src/stage.ts",
+    "./stage-kind": "./src/stage-kind.ts",
+    "./tsconfig.base.json": "./tsconfig.base.json"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "typescript": "catalog:"
+  }
 }

@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Run typecheck
+        run: bun run check-types
+      - name: Validate CI/CD scripts
+        run: |
+          bun x tsc --ignoreConfig --noEmit \
+            --module NodeNext \
+            --moduleResolution NodeNext \
+            --target ES2022 \
+            --skipLibCheck \
+            scripts/secrets-inject.ts \
+            scripts/setup.ts \
+            scripts/convex-preview-deployments.ts \
+            scripts/write-runtime-env.ts
+
+  lint:
+    name: Lint CI/CD
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Run scoped lint
+        run: bun x biome check package.json packages/infra scripts

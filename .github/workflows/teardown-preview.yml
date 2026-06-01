@@ -1,0 +1,48 @@
+name: Teardown Preview
+
+on:
+  pull_request:
+    types:
+      - closed
+
+concurrency:
+  group: preview-${{ github.event.pull_request.head.ref }}
+  cancel-in-progress: false
+
+jobs:
+  teardown:
+    name: Teardown Preview
+    runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.head.ref != 'main' }}
+    environment: Preview
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Clean branch name
+        id: clean-branch-name
+        uses: ./.github/actions/clean-branch-name
+        with:
+          branch: ${{ github.event.pull_request.head.ref }}
+
+      - name: Set stage
+        run: echo "STAGE=preview-${{ steps.clean-branch-name.outputs.clean_branch_name }}" >> "$GITHUB_ENV"
+
+      - name: Inject secrets
+        uses: ./.github/actions/inject-secrets
+        with:
+          stage: preview-${{ steps.clean-branch-name.outputs.clean_branch_name }}
+          op-service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      - name: Destroy Alchemy resources
+        run: bun run destroy
+
+      - name: Delete Convex preview deployment
+        if: always()
+        run: bun scripts/convex-preview-deployments.ts --stage "$STAGE"

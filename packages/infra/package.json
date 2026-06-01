@@ -8,11 +8,11 @@
     "destroy": "alchemy destroy"
   },
   "dependencies": {
+    "@challenge/config": "workspace:*",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@challenge/config": "workspace:*",
     "alchemy": "catalog:",
     "typescript": "catalog:"
   }
