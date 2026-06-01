@@ -9,6 +9,8 @@ interface ResolveRuntimeContextOptions {
 export interface RuntimeContext {
   backendEnv: {
     BETTER_AUTH_SECRET?: string;
+    CONVEX_SITE_URL: string;
+    CONVEX_URL: string;
     SITE_URL: string;
   };
   stage: string;
@@ -119,6 +121,8 @@ export function resolveRuntimeContext(
   return {
     backendEnv: {
       BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
+      CONVEX_SITE_URL: convexSiteUrl,
+      CONVEX_URL: convexUrl,
       SITE_URL: webUrl,
     },
     stage,

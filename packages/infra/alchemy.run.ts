@@ -9,6 +9,7 @@ import { config } from "dotenv";
 
 config({ path: "./.env", override: false });
 config({ path: "../../apps/web/.env", override: false });
+config({ path: "../../packages/backend/.env", override: false });
 config({ path: "../../packages/backend/.env.local", override: false });
 
 const stage = process.env.STAGE?.trim() || "dev";
