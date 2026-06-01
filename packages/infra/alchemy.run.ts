@@ -20,7 +20,7 @@ const app = await alchemy("challenge", {
   adopt: true,
   stage,
   stateStore: process.env.CI
-    ? (scope) => new CloudflareStateStore(scope)
+    ? (scope) => new CloudflareStateStore(scope, { forceUpdate: true })
     : undefined,
 });
 
