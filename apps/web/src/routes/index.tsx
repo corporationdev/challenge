@@ -135,7 +135,9 @@ function HomeComponent() {
                     @{account.normalizedUsername}
                   </div>
                   <div className="flex justify-end">
-                    {status.postedToday ? (
+                    {account.lastSyncStatus === "running" ? (
+                      <RefreshCw className="size-4 animate-spin text-muted-foreground" />
+                    ) : status.postedToday ? (
                       <Check className="size-4 text-emerald-600" />
                     ) : (
                       <span className="text-orange-500 tabular-nums">{status.countdown}</span>
