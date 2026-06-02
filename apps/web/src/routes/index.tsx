@@ -32,7 +32,7 @@ function formatDate(value?: number) {
   return dateTimeFormatter.format(new Date(value));
 }
 
-function dayStatus(latestPostAt?: number) {
+function dayStatus(postTimestamps: number[], accountCreatedAt: number) {
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const startOfYesterday = startOfToday - 24 * 60 * 60 * 1000;
@@ -40,10 +40,15 @@ function dayStatus(latestPostAt?: number) {
   const msRemaining = Math.max(0, startOfTomorrow - now.getTime());
   const hours = Math.floor(msRemaining / (60 * 60 * 1000));
   const minutes = Math.floor((msRemaining % (60 * 60 * 1000)) / (60 * 1000));
+  const postedToday = postTimestamps.some((postedAt) => postedAt >= startOfToday);
+  const postedYesterday = postTimestamps.some(
+    (postedAt) => postedAt >= startOfYesterday && postedAt < startOfToday,
+  );
+  const existedBeforeYesterday = accountCreatedAt < startOfYesterday;
 
   return {
-    postedToday: latestPostAt !== undefined && latestPostAt >= startOfToday,
-    missedDay: latestPostAt === undefined || latestPostAt < startOfYesterday,
+    postedToday,
+    missedDay: existedBeforeYesterday && !postedYesterday,
     countdown: `${hours}h ${minutes.toString().padStart(2, "0")}m`,
   };
 }
@@ -104,7 +109,7 @@ function HomeComponent() {
             </div>
           ) : (
             accounts.map((account) => {
-              const status = dayStatus(account.latestPostAt);
+              const status = dayStatus(account.postTimestamps, account.createdAt);
 
               return (
                 <Link

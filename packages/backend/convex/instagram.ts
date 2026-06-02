@@ -371,6 +371,9 @@ export const listOverview = query({
           videoCount: reportingPosts.length,
           totalViews,
           latestPostAt,
+          postTimestamps: reportingPosts
+            .map((post) => post.postedAt)
+            .filter((postedAt) => postedAt !== undefined),
         };
       }),
     );
