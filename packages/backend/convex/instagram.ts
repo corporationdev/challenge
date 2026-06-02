@@ -3,10 +3,10 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
-  action,
   internalAction,
   internalMutation,
   internalQuery,
+  type MutationCtx,
   mutation,
   query,
 } from "./_generated/server";
@@ -187,6 +187,36 @@ function shouldStorePost(post: NormalizedPost) {
   );
 }
 
+async function createSyncRun(
+  ctx: MutationCtx,
+  accountId: Id<"accounts">,
+  trigger: "manual" | "scheduled",
+) {
+  const account = await ctx.db.get(accountId);
+  if (!account) {
+    throw new Error("Account not found.");
+  }
+
+  const now = Date.now();
+  const syncRunId = await ctx.db.insert("syncRuns", {
+    accountId,
+    platform: account.platform,
+    status: "running",
+    trigger,
+    startedAt: now,
+    apifyActorId: APIFY_ACTOR_IDS[account.platform],
+    requestedPostsPerProfile: account.postsPerSync,
+  });
+
+  await ctx.db.patch(accountId, {
+    lastSyncStatus: "running",
+    lastSyncError: undefined,
+    updatedAt: now,
+  });
+
+  return syncRunId;
+}
+
 async function runApifyProfilePosts(
   platform: Platform,
   username: string,
@@ -319,9 +349,10 @@ export const registerAccount = mutation({
       });
     }
 
+    const syncRunId = await createSyncRun(ctx, accountId, "manual");
     await ctx.scheduler.runAfter(0, internal.instagram.syncAccount, {
       accountId,
-      trigger: "manual",
+      syncRunId,
     });
 
     return accountId;
@@ -453,29 +484,7 @@ export const startSyncRun = internalMutation({
     trigger: v.union(v.literal("manual"), v.literal("scheduled")),
   },
   handler: async (ctx, args) => {
-    const account = await ctx.db.get(args.accountId);
-    if (!account) {
-      throw new Error("Account not found.");
-    }
-
-    const now = Date.now();
-    const syncRunId = await ctx.db.insert("syncRuns", {
-      accountId: args.accountId,
-      platform: account.platform,
-      status: "running",
-      trigger: args.trigger,
-      startedAt: now,
-      apifyActorId: APIFY_ACTOR_IDS[account.platform],
-      requestedPostsPerProfile: account.postsPerSync,
-    });
-
-    await ctx.db.patch(args.accountId, {
-      lastSyncStatus: "running",
-      lastSyncError: undefined,
-      updatedAt: now,
-    });
-
-    return syncRunId;
+    return await createSyncRun(ctx, args.accountId, args.trigger);
   },
 });
 
@@ -661,7 +670,7 @@ export const pruneOutOfScopePosts = mutation({
 export const syncAccount = internalAction({
   args: {
     accountId: v.id("accounts"),
-    trigger: v.union(v.literal("manual"), v.literal("scheduled")),
+    syncRunId: v.id("syncRuns"),
   },
   handler: async (ctx, args) => {
     const account = await ctx.runQuery(internal.instagram.getAccountForSync, {
@@ -671,11 +680,6 @@ export const syncAccount = internalAction({
       return;
     }
 
-    const syncRunId = await ctx.runMutation(internal.instagram.startSyncRun, {
-      accountId: args.accountId,
-      trigger: args.trigger,
-    });
-
     try {
       const result = await runApifyProfilePosts(
         account.platform,
@@ -684,7 +688,7 @@ export const syncAccount = internalAction({
       );
       await ctx.runMutation(internal.instagram.finishSyncRun, {
         accountId: args.accountId,
-        syncRunId,
+        syncRunId: args.syncRunId,
         apifyRunId: result.apifyRunId,
         apifyDatasetId: result.apifyDatasetId,
         items: result.items,
@@ -692,7 +696,7 @@ export const syncAccount = internalAction({
     } catch (error) {
       await ctx.runMutation(internal.instagram.failSyncRun, {
         accountId: args.accountId,
-        syncRunId,
+        syncRunId: args.syncRunId,
         error: error instanceof Error ? error.message : "Unknown Apify sync error.",
       });
     }
@@ -704,22 +708,28 @@ export const syncAllActiveAccounts = internalAction({
   handler: async (ctx) => {
     const accounts = await ctx.runQuery(internal.instagram.listActiveAccounts, {});
     for (const account of accounts) {
-      await ctx.runAction(internal.instagram.syncAccount, {
+      const syncRunId = await ctx.runMutation(internal.instagram.startSyncRun, {
         accountId: account._id,
         trigger: "scheduled",
+      });
+      await ctx.runAction(internal.instagram.syncAccount, {
+        accountId: account._id,
+        syncRunId,
       });
     }
   },
 });
 
-export const syncAccountNow = action({
+export const syncAccountNow = mutation({
   args: {
     accountId: v.id("accounts"),
   },
   handler: async (ctx, args) => {
-    await ctx.runAction(internal.instagram.syncAccount, {
+    const syncRunId = await createSyncRun(ctx, args.accountId, "manual");
+    await ctx.scheduler.runAfter(0, internal.instagram.syncAccount, {
       accountId: args.accountId,
-      trigger: "manual",
+      syncRunId,
     });
+    return syncRunId;
   },
 });

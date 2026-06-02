@@ -2,7 +2,7 @@ import { api } from "@challenge/backend/convex/_generated/api";
 import type { Id } from "@challenge/backend/convex/_generated/dataModel";
 import { Button } from "@challenge/ui/components/button";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useAction, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, ExternalLink, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -38,14 +38,14 @@ function AccountDetailComponent() {
   const { accountId } = Route.useParams();
   const accountDocId = accountId as Id<"accounts">;
   const detail = useQuery(api.instagram.getAccountDetail, { accountId: accountDocId });
-  const syncAccountNow = useAction(api.instagram.syncAccountNow);
+  const syncAccountNow = useMutation(api.instagram.syncAccountNow);
   const [isSyncing, setIsSyncing] = useState(false);
 
   async function onSyncNow() {
     setIsSyncing(true);
     try {
       await syncAccountNow({ accountId: accountDocId });
-      toast.success("Sync complete.");
+      toast.success("Sync queued.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to sync account.");
     } finally {
