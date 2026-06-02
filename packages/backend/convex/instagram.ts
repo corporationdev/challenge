@@ -12,7 +12,7 @@ import {
 } from "./_generated/server";
 
 const APIFY_ACTOR_IDS = {
-  instagram: "instagram-scraper~instagram-profile-posts-scraper",
+  instagram: "apify~instagram-scraper",
   tiktok: "clockworks~tiktok-profile-scraper",
 } as const;
 const DEFAULT_SYNC_EVERY_HOURS = 4;
@@ -218,8 +218,11 @@ async function runApifyProfilePosts(
             shouldDownloadVideos: false,
           }
         : {
-            instagramUsernames: [username],
-            postsPerProfile,
+            directUrls: [`https://www.instagram.com/${username}/reels/`],
+            resultsType: "reels",
+            resultsLimit: postsPerProfile,
+            onlyPostsNewerThan: "2026-06-01",
+            addParentData: true,
           },
     ),
   });
