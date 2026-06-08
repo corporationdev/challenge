@@ -4,10 +4,10 @@ import { internal } from "./_generated/api";
 
 const crons = cronJobs();
 
-crons.interval(
-  "sync Instagram accounts",
-  { hours: 4 },
-  internal.instagram.syncAllActiveAccounts,
+crons.daily(
+  "sync social accounts during posting window",
+  { hourUTC: 22, minuteUTC: 0 },
+  internal.instagram.syncAllActiveAccountsInPostingWindow,
 );
 
 export default crons;

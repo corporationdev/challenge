@@ -18,6 +18,8 @@ const APIFY_ACTOR_IDS = {
 const DEFAULT_SYNC_EVERY_HOURS = 4;
 const DEFAULT_POSTS_PER_SYNC = 100;
 const REPORTING_WINDOW_START = Date.UTC(2026, 5, 1);
+const POSTING_WINDOW_TIME_ZONE = "America/Los_Angeles";
+const POSTING_WINDOW_SYNC_HOURS = new Set([8, 12]);
 
 type Platform = "instagram" | "tiktok";
 type ApifyPostItem = Record<string, unknown>;
@@ -185,6 +187,16 @@ function shouldStorePost(post: NormalizedPost) {
     post.postedAt !== undefined &&
     post.postedAt >= REPORTING_WINDOW_START
   );
+}
+
+function postingWindowHour(date: Date) {
+  const hour = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    hour12: false,
+    timeZone: POSTING_WINDOW_TIME_ZONE,
+  }).format(date);
+
+  return Number(hour);
 }
 
 async function createSyncRun(
@@ -717,6 +729,27 @@ export const syncAllActiveAccounts = internalAction({
         syncRunId,
       });
     }
+  },
+});
+
+export const syncAllActiveAccountsInPostingWindow = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    const hour = postingWindowHour(new Date());
+    if (!POSTING_WINDOW_SYNC_HOURS.has(hour)) {
+      return {
+        skipped: true,
+        hour,
+        timeZone: POSTING_WINDOW_TIME_ZONE,
+      };
+    }
+
+    await ctx.runAction(internal.instagram.syncAllActiveAccounts, {});
+    return {
+      skipped: false,
+      hour,
+      timeZone: POSTING_WINDOW_TIME_ZONE,
+    };
   },
 });
 

@@ -45,7 +45,6 @@ function AccountDetailComponent() {
     setIsSyncing(true);
     try {
       await syncAccountNow({ accountId: accountDocId });
-      toast.success("Sync queued.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to sync account.");
     } finally {
