@@ -1,0 +1,67 @@
+{
+  "reportingWindow": {
+    "since": "2026-06-01",
+    "timezone": "America/Los_Angeles"
+  },
+  "defaults": {
+    "postsPerAccount": 100
+  },
+  "people": [
+    {
+      "id": "propertydawg",
+      "name": "Propertydawg",
+      "accounts": [{ "platform": "tiktok", "handle": "propertydawg" }]
+    },
+    {
+      "id": "dane-mcd",
+      "name": "Dane McD",
+      "accounts": [
+        { "platform": "tiktok", "handle": "d.anemcd" },
+        { "platform": "instagram", "handle": "d.anemcd" }
+      ]
+    },
+    {
+      "id": "sf-brother0",
+      "name": "SF Brother",
+      "accounts": [
+        { "platform": "tiktok", "handle": "sf_brother0" },
+        { "platform": "instagram", "handle": "sf_brother0" }
+      ]
+    },
+    {
+      "id": "raflopez",
+      "name": "Raf Lopez",
+      "accounts": [{ "platform": "instagram", "handle": "rafl0pez" }]
+    },
+    {
+      "id": "jackshoeee",
+      "name": "Jack Shoeee",
+      "accounts": [{ "platform": "tiktok", "handle": "jackshoeee" }]
+    },
+    {
+      "id": "aidan-osully",
+      "name": "Aidan Osully",
+      "accounts": [{ "platform": "instagram", "handle": "aidan_osully" }]
+    },
+    {
+      "id": "richdogpoordog",
+      "name": "Rich Dog Poor Dog",
+      "accounts": [{ "platform": "tiktok", "handle": "richdogpoordog" }]
+    },
+    {
+      "id": "scrolltime-app",
+      "name": "Scrolltime App",
+      "accounts": [{ "platform": "tiktok", "handle": "scrolltime.app" }]
+    },
+    {
+      "id": "euro-maxxing",
+      "name": "Euro Maxxing",
+      "accounts": [{ "platform": "instagram", "handle": "euro_maxxing" }]
+    },
+    {
+      "id": "isaacdyor",
+      "name": "Isaac Dyor",
+      "accounts": [{ "platform": "instagram", "handle": "isaacdyor" }]
+    }
+  ]
+}

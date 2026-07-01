@@ -21,12 +21,6 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         content: "challenge is a web application",
       },
     ],
-    links: [
-      {
-        rel: "icon",
-        href: "/favicon.ico",
-      },
-    ],
   }),
 });
 
@@ -46,7 +40,9 @@ function RootComponent() {
         </div>
         <Toaster richColors />
       </ThemeProvider>
-      <TanStackRouterDevtools position="bottom-left" />
+      {import.meta.env.DEV && import.meta.env.VITE_SHOW_ROUTER_DEVTOOLS === "true" ? (
+        <TanStackRouterDevtools position="bottom-left" />
+      ) : null}
     </>
   );
 }
